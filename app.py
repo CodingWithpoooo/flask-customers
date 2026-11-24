@@ -27,7 +27,10 @@ def init_db():
     try:
         db_connection = get_db_connection()
         cursor = db_connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS customers (name VARCHAR(100), address VARCHAR(255))")
+        cursor.execute("CREATE TABLE IF NOT EXISTS customers (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), address VARCHAR(255))")
+        cursor.execute("SHOW COLUMNS FROM customers LIKE 'id'")
+        if cursor.fetchone() is None:
+            cursor.execute("ALTER TABLE customers ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY")
         cursor.execute("SHOW COLUMNS FROM customers LIKE 'phone'")
         if cursor.fetchone() is None:
             cursor.execute("ALTER TABLE customers ADD COLUMN phone VARCHAR(20)")
@@ -94,7 +97,7 @@ def show_customers():
     try:
         db_connection = get_db_connection()
         cursor = db_connection.cursor(dictionary=True)
-        cursor.execute("SELECT name, address, city, state, phone FROM customers ORDER BY name")
+        cursor.execute("SELECT id, name, address, city, state, phone FROM customers ORDER BY name")
         all_customers = cursor.fetchall()
         total_customers = len(all_customers)
     except mysql.connector.Error as err:
@@ -114,7 +117,7 @@ def search_customers():
         db_connection = get_db_connection()
         cursor = db_connection.cursor(dictionary=True)
 
-        sql = "SELECT name, address, city, state, phone FROM customers WHERE name LIKE %s OR city LIKE %s OR state LIKE %s OR phone LIKE %s ORDER BY name"
+        sql = "SELECT id, name, address, city, state, phone FROM customers WHERE name LIKE %s OR city LIKE %s OR state LIKE %s OR phone LIKE %s ORDER BY name"
         search_text = f"%{search_name}%"
         val = (search_text, search_text, search_text, search_text)
         cursor.execute(sql, val)
@@ -132,21 +135,21 @@ def search_customers():
 
 @app.route('/delete', methods=['POST'])
 def delete_customer():
-    remove_name = (request.form.get('removed_name') or '').strip()
-    if not remove_name:
-        flash("نام مشتری باید وارد شود.")
+    customer_id = (request.form.get('id') or '').strip()
+    if not customer_id:
+        flash("شناسه مشتری باید وارد شود.")
         return redirect('/customers')
 
     try:
+        customer_id = int(customer_id)
         db_connection = get_db_connection()
         cursor = db_connection.cursor()
-        cursor.execute("SELECT name FROM customers WHERE name = %s", (remove_name,))
-        if cursor.fetchone() is None:
-            flash("مشتری با این نام پیدا نشد.")
+        cursor.execute("DELETE FROM customers WHERE id = %s", (customer_id,))
+        if cursor.rowcount == 0:
+            flash("مشتری با این شناسه پیدا نشد.")
             return redirect('/customers')
-        cursor.execute("DELETE FROM customers WHERE name = %s", (remove_name,))
         db_connection.commit()
-    except mysql.connector.Error as err:
+    except (ValueError, mysql.connector.Error) as err:
         flash(f"خطا در حذف اطلاعات: {err}")
         return redirect('/customers')
     finally:
@@ -160,14 +163,23 @@ def delete_customer():
 
 @app.route('/update', methods=['POST'])
 def update_customer():
-    customer_name = (request.form.get('customer_name') or '').strip()
-    new_phone = (request.form.get('new_phone') or '').strip()
-    new_city = (request.form.get('new_city') or '').strip()
-    new_address = (request.form.get('new_address') or '').strip()
-    new_state = (request.form.get('new_state') or '').strip()
-    if not customer_name:
-        flash("نام مشتری باید وارد شود.")
+    customer_id = (request.form.get('id') or '').strip()
+    customer_name = (request.form.get('name') or request.form.get('customer_name') or '').strip()
+    new_phone = (request.form.get('phone') or request.form.get('new_phone') or '').strip()
+    new_city = (request.form.get('city') or request.form.get('new_city') or '').strip()
+    new_address = (request.form.get('address') or request.form.get('new_address') or '').strip()
+    new_state = (request.form.get('state') or request.form.get('new_state') or '').strip()
+
+    if not customer_id:
+        flash("شناسه مشتری باید وارد شود.")
         return redirect('/customers')
+
+    try:
+        customer_id = int(customer_id)
+    except ValueError:
+        flash("شناسه مشتری نامعتبر است.")
+        return redirect('/customers')
+
     if new_phone and not is_valid_phone(new_phone):
         flash("شماره تلفن معتبر نیست (باید ۱۱ رقم عددی و با پیش‌شماره 09 باشد).")
         return redirect('/customers')
@@ -177,33 +189,55 @@ def update_customer():
 
     try:
         db_connection = get_db_connection()
-
         cursor = db_connection.cursor()
-        cursor.execute("SELECT phone, city, address, state FROM customers WHERE name = %s", (customer_name,))
+
+        cursor.execute(
+            "SELECT name, address, phone, city, state FROM customers WHERE id = %s",
+            (customer_id,),
+        )
         current_data = cursor.fetchone()
         if current_data is None:
-            flash("مشتری با این نام پیدا نشد.")
+            flash("مشتری با این شناسه پیدا نشد.")
             return redirect('/customers')
 
-        current_phone, current_city, current_address, current_state = current_data
+        current_name, current_address, current_phone, current_city, current_state = current_data
 
+        if not customer_name:
+            customer_name = current_name
+        if not new_address:
+            new_address = current_address
         if not new_phone:
             new_phone = current_phone
         if not new_city:
             new_city = current_city
-        if not new_address:
-            new_address = current_address
         if not new_state:
             new_state = current_state
 
+        cursor.execute(
+            "SELECT id FROM customers WHERE name = %s AND id != %s",
+            (customer_name, customer_id),
+        )
+        if cursor.fetchone() is not None:
+            flash("این نام متعلق به مشتری دیگری است.")
+            return redirect('/customers')
+
         if new_phone:
-            cursor.execute("SELECT phone FROM customers WHERE phone = %s AND name != %s", (new_phone, customer_name))
+            cursor.execute(
+                "SELECT id FROM customers WHERE phone = %s AND id != %s",
+                (new_phone, customer_id),
+            )
             if cursor.fetchone() is not None:
                 flash("این شماره تلفن متعلق به مشتری دیگری است.")
                 return redirect('/customers')
-        sql = "UPDATE customers SET phone = %s, city = %s, address = %s, state = %s WHERE name = %s"
-        val = (new_phone, new_city, new_address, new_state, customer_name)
-        cursor.execute(sql, val)
+
+        cursor.execute(
+            """
+            UPDATE customers
+            SET name = %s, address = %s, phone = %s, city = %s, state = %s
+            WHERE id = %s
+            """,
+            (customer_name, new_address, new_phone, new_city, new_state, customer_id),
+        )
         db_connection.commit()
     except mysql.connector.Error as err:
         flash(f"خطا در به‌روزرسانی: {err}")

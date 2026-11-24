@@ -36,16 +36,17 @@
     <p><a href="/customers">نمایش همه</a></p>
     
     <form action="/delete" method="post">
-        <input type="text" name="removed_name" placeholder="نام مشتری جهت حذف">
+        <input type="number" name="id" placeholder="شناسه مشتری جهت حذف" required>
         <button type="submit">حذف مشتری</button>
     </form>
 
     <form action="/update" method="post">
-        <input type="text" name="customer_name" placeholder="نام مشتری" required>
-        <input type="text" name="new_phone" placeholder="شماره تلفن جدید">
-        <input type="text" name="new_city" placeholder="شهر جدید">
-        <input type="text" name="new_address" placeholder="آدرس جدید" >
-        <input type="text" name="new_state" placeholder="استان جدید" maxlength="2">
+        <input type="number" name="id" placeholder="شناسه مشتری" required>
+        <input type="text" name="name" placeholder="نام مشتری جدید" >
+        <input type="text" name="phone" placeholder="شماره تلفن جدید">
+        <input type="text" name="city" placeholder="شهر جدید">
+        <input type="text" name="address" placeholder="آدرس جدید">
+        <input type="text" name="state" placeholder="استان جدید" maxlength="2">
         <button type="submit">به‌روزرسانی</button>
     </form>
     {% if total_customers == 0 %}
@@ -53,6 +54,7 @@
     {%else%}
     <table>
         <tr>
+            <th>شناسه</th>
             <th>ردیف</th>
             <th>نام مشتری</th>
             <th>آدرس</th>
@@ -63,6 +65,7 @@
         </tr>
         {% for person in names_list %}
         <tr>
+            <td>{{ person.id }}</td>
             <td>{{ loop.index }}</td>
             <td>{{ person.name }}</td>
             <td>{{ person.address }}</td>
@@ -70,7 +73,7 @@
             <td>{{ person.state }}</td>
             <td>{{ person.phone }}</td>
             <td><form action="/delete" method="post" style="margin: 0;">
-                <input type="hidden" name="removed_name" value="{{ person.name }}">
+                <input type="hidden" name="id" value="{{ person.id }}">
                 <button type="submit">حذف</button>
             </form></td>
         </tr>
