@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لیست مشتریان</title>
+    <style>
+        table {
+            width: 70%; border-collapse: collapse; margin-top: 20px;
+        }
+        th, td {
+            border: solid 1px #1234; padding: 10px; text-align: right;
+        }
+        th {
+            background-color: aqua;
+        }
+    </style>
+</head>
+<body style="font-family: Tahoma; margin: 40px;">
+    {% with messages=get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for msg in messages %}
+                    <li style="color: red; font-weight: bold;">{{ msg }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <h2>جدول مشتریان ثبت شده در دیتابیس:</h2>
+    <p>تعداد کل مشتریان: {{ total_customers }}</p>
+    
+    <form action="/search" method="post">
+        <input type="text" name="search_name" placeholder="جستجوی نام، شهر، استان یا تلفن">
+        <button type="submit">جستجو</button>
+    </form>
+    <p><a href="/customers">نمایش همه</a></p>
+    
+    <form action="/delete" method="post">
+        <input type="text" name="removed_name" placeholder="نام مشتری جهت حذف">
+        <button type="submit">حذف مشتری</button>
+    </form>
+
+    <form action="/update" method="post">
+        <input type="text" name="customer_name" placeholder="نام مشتری" required>
+        <input type="text" name="new_phone" placeholder="شماره تلفن جدید">
+        <input type="text" name="new_city" placeholder="شهر جدید">
+        <input type="text" name="new_address" placeholder="آدرس جدید" >
+        <input type="text" name="new_state" placeholder="استان جدید" maxlength="2">
+        <button type="submit">به‌روزرسانی</button>
+    </form>
+    {% if total_customers == 0 %}
+    <p>مشتری‌ای با این مشخصات پیدا نشد</p>
+    {%else%}
+    <table>
+        <tr>
+            <th>ردیف</th>
+            <th>نام مشتری</th>
+            <th>آدرس</th>
+            <th>شهر</th>
+            <th>استان</th>
+            <th>شماره تلفن</th>
+            <th>عملیات</th>
+        </tr>
+        {% for person in names_list %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ person.name }}</td>
+            <td>{{ person.address }}</td>
+            <td>{{ person.city}}</td>
+            <td>{{ person.state }}</td>
+            <td>{{ person.phone }}</td>
+            <td><form action="/delete" method="post" style="margin: 0;">
+                <input type="hidden" name="removed_name" value="{{ person.name }}">
+                <button type="submit">حذف</button>
+            </form></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    <br>
+    <a href="/">بازگشت به صفحه ثبت نام</a>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت نام مشتریان</title>
+</head>
+<body style="font-family: Tahoma; margin: 40px;">
+    <h2>سیستم ثبت مشتریان</h2>
+    {% with messages=get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for msg in messages %}
+                    <li style="color: red; font-weight: bold;">{{ msg }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <form action="/submit" method="post">
+        <label>نام و نام خانوادگی:</label>
+        <input type="text" name="name" required><br><br>
+        <label>آدرس:</label>
+        <input type="text" name="address" required><br><br>
+        <label>شهر:</label>
+        <input type="text" name="city"><br><br>
+        <label>استان (دو حرفی):</label>
+        <input type="text" name="state" maxlength="2"><br><br>
+        <label>شماره:</label>
+        <input type="text" name="phone"><br><br>
+        <button type="submit">ثبت اطلاعات</button>
+    </form>
+    <br>
+    <a href="/customers">مشاهده جدول مشتریان</a>
+</body>
+</html>
