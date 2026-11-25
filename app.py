@@ -177,6 +177,7 @@ def update_customer():
     try:
         customer_id = int(customer_id)
     except ValueError:
+        
         flash("شناسه مشتری نامعتبر است.")
         return redirect('/customers')
 
