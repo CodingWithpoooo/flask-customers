@@ -136,12 +136,12 @@ def search_customers():
 @app.route('/delete', methods=['POST'])
 def delete_customer():
     customer_id = (request.form.get('id') or '').strip()
-    if not customer_id:
-        flash("شناسه مشتری باید وارد شود.")
+    if not customer_id.isdigit():
+        flash("شناسه واردشده نامعتبر است؛ لطفاً فقط عدد وارد کنید.")
         return redirect('/customers')
 
+    customer_id = int(customer_id)
     try:
-        customer_id = int(customer_id)
         db_connection = get_db_connection()
         cursor = db_connection.cursor()
         cursor.execute("DELETE FROM customers WHERE id = %s", (customer_id,))
@@ -149,7 +149,7 @@ def delete_customer():
             flash("مشتری با این شناسه پیدا نشد.")
             return redirect('/customers')
         db_connection.commit()
-    except (ValueError, mysql.connector.Error) as err:
+    except mysql.connector.Error as err:
         flash(f"خطا در حذف اطلاعات: {err}")
         return redirect('/customers')
     finally:
@@ -164,22 +164,16 @@ def delete_customer():
 @app.route('/update', methods=['POST'])
 def update_customer():
     customer_id = (request.form.get('id') or '').strip()
+    if not customer_id.isdigit():
+        flash("شناسه واردشده نامعتبر است؛ لطفاً فقط عدد وارد کنید.")
+        return redirect('/customers')
+    customer_id = int(customer_id)
+
     customer_name = (request.form.get('name') or request.form.get('customer_name') or '').strip()
     new_phone = (request.form.get('phone') or request.form.get('new_phone') or '').strip()
     new_city = (request.form.get('city') or request.form.get('new_city') or '').strip()
     new_address = (request.form.get('address') or request.form.get('new_address') or '').strip()
     new_state = (request.form.get('state') or request.form.get('new_state') or '').strip()
-
-    if not customer_id:
-        flash("شناسه مشتری باید وارد شود.")
-        return redirect('/customers')
-
-    try:
-        customer_id = int(customer_id)
-    except ValueError:
-        
-        flash("شناسه مشتری نامعتبر است.")
-        return redirect('/customers')
 
     if new_phone and not is_valid_phone(new_phone):
         flash("شماره تلفن معتبر نیست (باید ۱۱ رقم عددی و با پیش‌شماره 09 باشد).")
